@@ -1,11 +1,16 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import protobuf from 'protobufjs'
 const { Buffer } = require('buffer/')
 
+function formatPrice(price) {
+  return `$${price.toFixed(2)}`
+}
+
 function App() {
+  const [currentPrice, setCurrentPrice] = useState(null)
+
   useEffect(() => {
     const ws = new WebSocket('wss://streamer.finance.yahoo.com')
-    // const root = protobuf.loadSync('./YPricingData.proto')
     protobuf.load('./YPricingData.proto', (error, root) => {
       if (error) {
         console.log(error)
@@ -17,7 +22,7 @@ function App() {
 
         ws.send(
           JSON.stringify({
-            subscribe: ['MSFT'],
+            subscribe: ['GME'],
           })
         )
       }
@@ -27,10 +32,8 @@ function App() {
       }
 
       ws.onmessage = function incoming(message) {
-        // console.log('incoming data')
-        // console.log(message.data)
-        // console.log(Yaticker.decode(new ArrayBuffer(message.data, 'base64')))
-        console.log(Yaticker.decode(new Buffer(message.data, 'base64')))
+        const next = Yaticker.decode(new Buffer(message.data, 'base64'))
+        setCurrentPrice(next)
       }
     })
   }, [])
@@ -38,6 +41,7 @@ function App() {
   return (
     <div>
       <h1>RTST</h1>
+      {(currentPrice && <h2>{formatPrice(currentPrice.price)}</h2>) || <h2>Waiting for update signal...</h2>}
     </div>
   )
 }
